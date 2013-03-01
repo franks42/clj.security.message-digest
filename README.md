@@ -1,5 +1,7 @@
 # clj.security.message-digest
 
+# !! STILL EARLY BETA... PLS STAY AWAY FROM THIS CODE FOR YOUR OWN GOOD !!
+
 A functional clojure library for the creation of secure hashes, i.e. message digests, 
 thru the one-way functions known by the names of MD5, SHA-1, SHA-256, SHA-512, etc. 
 Under the covers, the java.security.MessageDigest library is used.
