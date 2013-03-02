@@ -6,3 +6,5 @@ pom.xml
 .lein-deps-sum
 .lein-failures
 .lein-repl-history
+.lein_repls
+.lein-plugins/checksum

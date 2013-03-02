@@ -62,19 +62,17 @@
 
 
 (def d0 (message-digest "MD5" "UTF-8"))
-
-;; user=> (java.util.Arrays/equals (hex->bytes (->hex (.getBytes "abc"))) (.getBytes "abc"))
-;; true
+(def md5-abc (hex->bytes "900150983CD24FB0D6963F7D28E17F72"))
 
 (deftest interface-test
   (testing "testing combinations of update and digest with different data type for arguments."
-    (is (= (->hex (digest (message-digest "MD5" "UTF-8") "abc"))
-           (->hex (digest (update (message-digest "MD5" "UTF-8") "abc")))
-           (->hex (digest d0 "abc"))
-           (->hex (digest (update d0 "abc")))
-           (->hex (binding [*default-digest-algorithm* "MD5"
-                            *default-utf-encoding* "UTF-8"] 
-                    (digest "abc")))
-           "900150983CD24FB0D6963F7D28E17F72"
-           ))))
+    (is (digests-equal? (digest (message-digest "MD5" "UTF-8") "abc") md5-abc))
+    (is (digests-equal? (digest (update (message-digest "MD5" "UTF-8") "abc")) md5-abc))
+    (is (digests-equal? (digest d0 "abc") md5-abc))
+    (is (digests-equal? (digest (update d0 "abc")) md5-abc))
+    (is (digests-equal? (binding [*default-digest-algorithm* "MD5"
+                    *default-charset* "UTF-8"] 
+            (digest "abc")) md5-abc))
+    (is (digests-equal? (hex->bytes "900150983CD24FB0D6963F7D28E17F72") md5-abc))
+  ))
 

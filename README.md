@@ -8,7 +8,7 @@ Under the covers, the java.security.MessageDigest library is used.
 The interfaces are functional as the message-digest object, which holds the accumulated
 digest state, is immutable. The "message-digest" factory function creates a new 
 message-digest object, and is passed the digest-algorithm to use for the hashing as well 
-as the utf-encoding to use for strings. The "update" function returns a new updated 
+as the charset/utf-encoding to use for strings. The "update" function returns a new updated 
 message-digest object, while the "digest" function generates the accumulated digest 
 without changing the passed message-digest object. 
 The functional interfaces allow for a more clojuresque and worry-free coding experience.
@@ -17,7 +17,7 @@ it can safely be used in higher-order reduce-like functions.
 Lastly, both update and digest can be passed a variable number of arguments, 
 which will be digested lazely to accommodate a virtual infinite number of args. Also,
 the arguments can be a mix of strings, characters, bytes or byte-arrays that will be 
-transparently utf-encoded if needed, and nils are ignored.
+transparently charset/utf-encoded if needed, and nils are ignored.
 
 ## Usage
 
