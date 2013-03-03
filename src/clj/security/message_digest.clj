@@ -29,8 +29,11 @@
   (see \"http://www.nsrl.nist.gov/testdata/\")
   "
   (:require [clojure.string])
-  (:import [java.security.MessageDigest]
+  (:import [clojure.lang IFn]
+           [clojure.lang.AFn]
+           [java.security.MessageDigest]
            [java.nio.charset.Charset]))
+
 
 ;; http://www.nsrl.nist.gov/testdata/
 
@@ -65,12 +68,12 @@
   (charset-name "UTF-8"))
 
 
-(defn ->bytes
+(defn any2bytes
   "Transforms the input argument value to a byte-array.
   Uses specified charset for strings and chars when necessary.
   Input can be (vector-of :byte ...)
   Output can be used to feed message digesters"
-  ([s] (->bytes *default-charset* s))
+  ([s] (any2bytes *default-charset* s))
   ([charset s]
   (cond
     (char? s) (.getBytes (str s) charset)
@@ -78,7 +81,72 @@
     (= (type s) clojure.core.Vec) (byte-array s)
     :else s)))
 
-(deftype TMessageDigest [msg-digest charset])
+(defprotocol IMessageDigest
+  "Defines the -update and -digest interfaces for TMessageDigest objects."
+    (-update [this bytes-or-str]
+    "See \"update\" function")
+    (-digest [this][this bytes-or-str] 
+    "See \"digest\" function")
+    (algorithm [this] 
+    "Returns the message-digest/secure-hash algorithm name for this digester")
+    (charset [this] 
+    "Returns the configured charset name that will be used for string2bytes 
+    encoding for this digester")
+  )
+
+
+(deftype TMessageDigest [msg-digest charset]
+  IFn
+    (invoke [this]
+      (-digest this))
+    (invoke [this s0](-update this [s0]))
+    (invoke [this s0 s1](-update this [s0 s1]))
+    (invoke [this s0 s1 s2](-update this [s0 s1 s2]))
+    (invoke [this s0 s1 s2 s3](-update this [s0 s1 s2 s3]))
+    (invoke [this s0 s1 s2 s3 s4](-update this [s0 s1 s2 s3 s4]))
+    (invoke [this s0 s1 s2 s3 s4 s5](-update this [s0 s1 s2 s3 s4 s5]))
+    (invoke [this s0 s1 s2 s3 s4 s5 s6](-update this [s0 s1 s2 s3 s4 s5 s6]))
+    (invoke [this s0 s1 s2 s3 s4 s5 s6 s7](-update this [s0 s1 s2 s3 s4 s5 s6 s7]))
+    (invoke [this s0 s1 s2 s3 s4 s5 s6 s7 s8](-update this [s0 s1 s2 s3 s4 s5 s6 s7 s8]))
+    (invoke [this s0 s1 s2 s3 s4 s5 s6 s7 s8 s9](-update this [s0 s1 s2 s3 s4 s5 s6 s7 s8 s9]))
+    (applyTo [this args] 
+      (clojure.lang.AFn/applyToHelper this args))
+  )
+
+
+(extend-type TMessageDigest
+  IMessageDigest
+    (-update
+      ([this bytes-or-str]
+        (let [digest (.clone (.-msg-digest this))
+              charset (.-charset this)]
+          (loop [charset charset
+                 bytes-or-str bytes-or-str]
+            (if-let [bytes-or-str (seq bytes-or-str)]
+              (let [s (first bytes-or-str)]
+                (if (keyword? s)
+                  (recur (charset-name (name s)) (rest bytes-or-str))
+                  (do
+                    (when-not (nil? s)
+                      (.update digest 
+                               (cond
+                                (char? s) (.getBytes (str s) charset)
+                                (string? s) (.getBytes s charset)
+                                (= (type s) clojure.core.Vec) (byte-array s)
+                                :else s)))
+                      (recur charset (rest bytes-or-str)))))
+              (TMessageDigest. digest charset))))))
+    (-digest
+      ([this] 
+        (.digest (.clone (.-msg-digest this))))
+      ([this bytes-or-str] 
+        (-digest (-update this bytes-or-str))))
+    (algorithm
+      ([this] 
+        (.getAlgorithm (.-msg-digest this))))
+    (charset
+      ([this] 
+        (.-charset this))))
 
 
 (defn message-digest
@@ -107,55 +175,6 @@
     (let [digest-algo (.getAlgorithm digest)
           charset (charset-name (name charset))]
       (TMessageDigest. digest charset))))
-
-
-(defprotocol IMessageDigest
-  "Defines the -update and -digest interfaces for TMessageDigest objects."
-    (-update [this bytes-or-str]
-    "See \"update\" function")
-    (-digest [this][this bytes-or-str] 
-    "See \"digest\" function")
-    (algorithm [this] 
-    "Returns the message-digest/secure-hash algorithm name for this digester")
-    (charset [this] 
-    "Returns the configured charset name that will be used for string2bytes 
-    encoding for this digester")
-  )
-
-
-(extend-type TMessageDigest
-  IMessageDigest
-  (-update
-    ([this bytes-or-str]
-      (let [digest (.clone (.-msg-digest this))
-            charset (.-charset this)]
-        (loop [charset charset
-               bytes-or-str bytes-or-str]
-          (if-let [bytes-or-str (seq bytes-or-str)]
-            (let [s (first bytes-or-str)]
-              (if (keyword? s)
-                (recur (charset-name (name s)) (rest bytes-or-str))
-                (do
-                  (when-not (nil? s)
-                    (.update digest 
-                             (cond
-                              (char? s) (.getBytes (str s) charset)
-                              (string? s) (.getBytes s charset)
-                              (= (type s) clojure.core.Vec) (byte-array s)
-                              :else s)))
-                    (recur charset (rest bytes-or-str)))))
-            (TMessageDigest. digest charset))))))
-  (-digest
-    ([this] 
-      (.digest (.clone (.-msg-digest this))))
-    ([this bytes-or-str] 
-      (-digest (-update this bytes-or-str))))
-  (algorithm
-    ([this] 
-      (.getAlgorithm (.-msg-digest this))))
-  (charset
-    ([this] 
-      (.-charset this))))
 
 
 (defn digests-equal?
@@ -218,13 +237,13 @@
         (apply digest (message-digest) this bytes-or-str))))
 
 
-(defn ->hex 
+(defn bytes2hex 
   "Returs a string with the hex-value equivalents of the given byte-array."
   [some-bytes]
   (clojure.string/upper-case 
-    (apply str (map (partial format "%02x") (->bytes some-bytes)))))
+    (apply str (map (partial format "%02x") (any2bytes some-bytes)))))
 
-(defn hex->bytes 
+(defn hex2bytes 
   "Returns a byte array for a string of hexadecimals."
   [hex-str]
   (into-array Byte/TYPE
@@ -232,10 +251,10 @@
                 (unchecked-byte (Integer/parseInt (str x y) 16)))
                 (partition 2 hex-str))))
 
-(defn ->base64 
+(defn bytes2base64 
   [some-bytes]
   (org.apache.commons.codec.binary.Base64/encodeBase64String some-bytes))
 
-(defn ->base32 
+(defn bytes2base32 
   [some-bytes]
   (.encodeToString (org.apache.commons.codec.binary.Base32.) some-bytes))

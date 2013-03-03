@@ -6,7 +6,10 @@
   :dependencies [[org.clojure/clojure "1.5.0"]
                  [commons-codec "1.5"]]
   :dev-dependencies [[clj-ns-browser "1.4.0-SNAPSHOT"]
-                     [codox "0.6.1"]]
-  :plugins [[codox "0.6.4"]]
-  :profiles {:dev {:dependencies [[clj-ns-browser "1.4.0-SNAPSHOT"]]}}
+                     [codox "0.6.4"]
+                     ]
+  :plugins [[codox "0.6.4"]
+            ]
+  :profiles {:dev {:dependencies [[clj-ns-browser "1.4.0-SNAPSHOT"]
+                                  ]}}
   )

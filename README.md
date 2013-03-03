@@ -34,6 +34,8 @@ transparently charset/utf-encoded if needed, and nils are ignored.
 
 (see "http://www.nsrl.nist.gov/testdata/")
 
+See "https://gist.github.com/franks42/5074268" for example repl-session.
+
 See "clj.security.message-digest-test" file for more examples.
 
 
