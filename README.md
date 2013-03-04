@@ -3,13 +3,15 @@
 A functional clojure library for the creation of secure hashes, i.e. message digests, 
 thru one-way functions like MD5, SHA-1, SHA-256, SHA-512, etc. 
 
-** Introduction
+(not sure about the practicality  - more an exercise in interface design...)
 
-Under the covers, this library uses the java.security.MessageDigest library. However, instead of using the Java methods directly, a more clojuresque and functional abstraction is layered on top of the native mutable objects and state-changing methods. 
+## Introduction
+
+Under the covers, this library uses the "java.security.MessageDigest" library. However, instead of using the Java methods directly, a more clojuresque and functional abstraction is layered on top of the native mutable objects and state-changing methods. 
  
-The clj.security.message-digest library works with immutable message-digest objects with pure functional update and digest functions.
+The "clj.security.message-digest" library works with immutable "message-digest" objects with pure functional "update" and "digest" functions.
 
-as the message-digest object, which holds the accumulated
+As the message-digest object, which holds the accumulated
 digest state, is immutable. The "message-digest" factory function creates a new 
 message-digest object, and is passed the digest-algorithm to use for the hashing as well 
 as the charset/utf-encoding to use for strings. The "update" function returns a new updated 
@@ -28,7 +30,7 @@ transparently charset/utf-encoded if needed, and nils are ignored.
 
 ### A functional java.security.MessageDigest-like approach
 
-When you're familiar with the java.security.MessageDigest interfaces, then it will be easy to use the equivalent, more functional interface. Instead of "java.security.MessageDigest/getInstance" we have the "make-message-digest" factory function, which returns a "message-digest" instance. There are also the "update" and "digest" functions that do almost the same thing as the Java methods with the same name. The differences are that neither update nor digest changes the message-digest instance that it works on: the message-digest object is immutable. Therefor, the update function returns a new message-digest instance that incorporates the updated digest-accumulator, and the digest function does not reset the message-digest but leaves it as is.
+When you're familiar with the "java.security.MessageDigest" interfaces, then it will be easy to use the equivalent, more functional interface. Instead of "java.security.MessageDigest/getInstance" we have the "make-message-digest" factory function, which returns a "message-digest" instance. There are also the "update" and "digest" functions that do almost the same thing as the Java methods with the same name. The differences are that neither "update" nor "digest" changes the "message-digest" instance that it works on: the "message-digest" object is immutable. Therefor, the "update" function returns a new "message-digest" instance that incorporates the updated digest-accumulator, and the "digest" function does not reset the message-digest's accumulator but leaves it as is.
 
 The following repl-examples should make the differences clear:
 
@@ -63,9 +65,9 @@ So... clj.security.message-digest provides an equivalent functional interface fo
 ### A more Clojuresque Message Digest Interface
 
 There are few more features that make it easier to digest the strings and bytes of data structures like lists and trees. 
-* First of all, both update and digest support a variable number of arguments to digest. 
+* First of all, both the "update" and "digest" functions support a variable number of arguments to digest. 
 * Second, the byte encoding of strings and chars is done implicitly by specifying a charset as an argument. 
-* Third, the message-digest instance is implicitly created inside of the update and digest function if one does not pass a digest-message object as the first argument. The digest algorithm for this newly created digest-message instance can either be specified by a first keyword argument, or by using the "\*default-digest-algorithm\*" and "\*default-charset\*" dynamic variables.
+* Third, the "message-digest" instance is implicitly created inside of the "update" and "digest" function if one does not pass a "digest-message" object as the first argument. The digest-algorithm for this newly created digest-message instance can either be specified by a first keyword argument, or by using the "\*default-digest-algorithm\*" and "\*default-charset\*" dynamic variables.
 
 Specify both digest-algorithm and charset as keyword values in the factory function, and show variable number of arguments of different types:
 
@@ -78,7 +80,7 @@ Specify both digest-algorithm and charset as keyword values in the factory funct
 	user=> (md/bytes2hex (md/digest (md/make-message-digest :sha-1 :utf-8) "a" \b (byte 99)))
 	"A9993E364706816ABA3E25717850C26C9CD0D89D"
 
-Implicitly create a message-digest object inside of update and digest if needed:
+Implicitly create a "message-digest" object inside of "update" and "digest" if needed:
 
 	user=> (md/bytes2hex (md/digest (md/update :sha-1 :utf-8 "a" \b (byte 99))))
 	"A9993E364706816ABA3E25717850C26C9CD0D89D"
@@ -94,7 +96,7 @@ Implicitly create a message-digest object inside of update and digest if needed:
 
 ### A much more Clojuresque Message Digest Interface
 
-Conceptually and also implementation-wise, the "make-message-digest" and "update" functions are truly equivalent and the same in functionality: they both return a new message-digest instance from either an existing message-digest or by creating a new one if needed. If a new message-digest is needed, then the first parameter MUST indicate the digest algorithm. Any subsequent parameters are either those entities that have to be digested or a keyword-indicator for the charset of the subsequent string or chars to digest. The charset MUST be indicated with a keyword to distinguish it from the strings that are to be digested.
+Conceptually and also implementation-wise, the "make-message-digest" and "update" functions are truly equivalent and the same in functionality: they both return a new "message-digest" instance from either an existing "message-digest" or by creating a new one if needed. If a new "message-digest" is needed, then the first parameter MUST indicate the digest-algorithm. Any subsequent parameters are either those entities that have to be digested or a keyword-indicator for the charset of the subsequent string or chars to digest. The charset MUST be indicated with a keyword to distinguish it from the strings that are to be digested.
 
 	user=> (md/bytes2hex (md/digest (md/update (md/update (md/update :sha-1 :utf-8 "a") \b) (byte 99))))
 	"A9993E364706816ABA3E25717850C26C9CD0D89D"
@@ -103,16 +105,16 @@ Conceptually and also implementation-wise, the "make-message-digest" and "update
 
 In other words, the "make-message-digest" and "update" functions are interchangeable.
 
-Furthermore, the message-digest instances can also be used as functions, like:
+Furthermore, the "message-digest" instances themselves can also be used as functions, like:
 
 	user=> (def my-initial-digester (md/make-message-digest :sha-1 :utf-8))
 	#'user/my-initial-digester
 	user=> (md/bytes2hex (md/digest (my-initial-digester "abc")))
 	"A9993E364706816ABA3E25717850C26C9CD0D89D"
 
-So a message-digest object can be seen as a digester function that has the accumulated digest baked in, and it will return a new message-digest object/digester which has the digests of the additional arguments added to the accumulator: it has the equivalent functionality of the "update" function.
+So a "message-digest" object can be seen as a digester function that has the accumulated digest baked in, and it will return a new "message-digest" object/digester which has the digests of the additional arguments added to the accumulator: it has the equivalent functionality of the "update" function.
 
-Finally, if the message-digest object as a function is called without any arguments, it will return the final digest value of the accumulated digests itself:
+Finally, if the "message-digest" object as a function is called without any arguments, it will return the final digest value of the accumulated digests itself:
 
 	user=> (def my-initial-digester (md/make-message-digest :sha-1 :utf-8))
 	#'user/my-initial-digester
@@ -127,7 +129,7 @@ Finally, if the message-digest object as a function is called without any argume
 
 In other words, the "message-digest" object as a function is equivalent to both the "update" and "digest" functions, which implies that only having the "make-message-digest" would suffice.
 
-See "https://gist.github.com/franks42/5074268" for example repl-session.
+See "https://gist.github.com/franks42/5074268" for an additional example repl-session.
 
 See "clj.security.message-digest-test" file for more examples.
 
