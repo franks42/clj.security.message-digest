@@ -3,7 +3,7 @@
   thru the one-way functions known by the names of MD5, SHA-1, SHA-256, SHA-512, etc. 
   Under the covers, the java.security.MessageDigest library is used.
   The interfaces are functional as the message-digest object, which holds the accumulated
-  digest state, is immutable. The \"message-digest\" factory function creates a new 
+  digest state, is immutable. The \"make-message-digest\" factory function creates a new 
   message-digest object, and is passed the digest-algorithm to use for the hashing as well 
   as the charset to use for strings. The \"update\" function returns a new updated 
   message-digest object, while the \"digest\" function generates the accumulated digest 
@@ -16,7 +16,7 @@
   the arguments can be a mix of strings, characters, bytes or byte-arrays that will be 
   transparently utf-encoded if needed, and nils are ignored.
   Example:
-  user=> (def d0 (message-digest \"SHA-1\" \"UTF-8\"))
+  user=> (def d0 (make-message-digest \"SHA-1\" \"UTF-8\"))
   #'user/d0
   user=> (->hex (digest d0 \"abc\"))
   \"A9993E364706816ABA3E25717850C26C9CD0D89D\"
@@ -52,20 +52,24 @@
 ;; "UTF-8"
 
 (defn charset-name 
-  "Returs the canonical charset name for s and throws exception when s does not refer to a valid charset."
+  "Returs the canonical charset name for s and throws an exception when s does not refer to a valid charset encoding.
+  s can be a string or keyword.
+  Returns string with canonical charset name."
   [s]
-  (.name (java.nio.charset.Charset/forName s)))
+  (.name (java.nio.charset.Charset/forName (name s))))
 
 
 (def ^:dynamic *default-digest-algorithm*
-  "Dynamic var that holds the default digest-algorithm to use for the message digesting, i.e. secure hashing."
-  "SHA-1")
+  "Dynamic var that holds the default digest-algorithm (as a keyword) to use for the message digesting, i.e. secure hashing.
+  For example: :sha-1, :MD5, :SHA-512."
+  :SHA-1)
 
 
 (def ^:dynamic *default-charset* 
-  "Dynamic var that holds the default charset to use to transform strings to 
-  byte-arrays for the message digesting, i.e. secure hashing."
-  (charset-name "UTF-8"))
+  "Dynamic var that holds the default charset (as a keyword) to use to transform strings to 
+  byte-arrays for the message digesting, i.e. secure hashing.
+  For example: :UTF-8, :utf-16."
+  :UTF-8)
 
 
 (defn any2bytes
@@ -73,7 +77,7 @@
   Uses specified charset for strings and chars when necessary.
   Input can be (vector-of :byte ...)
   Output can be used to feed message digesters"
-  ([s] (any2bytes *default-charset* s))
+  ([s] (any2bytes (name *default-charset*) s))
   ([charset s]
   (cond
     (char? s) (.getBytes (str s) charset)
@@ -125,7 +129,7 @@
             (if-let [bytes-or-str (seq bytes-or-str)]
               (let [s (first bytes-or-str)]
                 (if (keyword? s)
-                  (recur (charset-name (name s)) (rest bytes-or-str))
+                  (recur (charset-name s) (rest bytes-or-str))
                   (do
                     (when-not (nil? s)
                       (.update digest 
@@ -149,7 +153,7 @@
         (.-charset this))))
 
 
-(defn message-digest
+(defn make-message-digest
   "Factory function to create TMessageDigest objects for use with \"update\" and \"digest\".
   digest-algo - string indicating the digest algorithm to use, like \"SHA-256\"
   charset - string indicating the text encoding to use, like \"UTF-8\"
@@ -158,23 +162,59 @@
   Returns a new TMessageDigest object."
   ([] 
     (TMessageDigest. 
-      (java.security.MessageDigest/getInstance *default-digest-algorithm*)
-      (charset-name (name *default-charset*))))
-  ([digest-algo] 
-    (let [digest-algo (clojure.string/upper-case (name digest-algo))
-          digest (java.security.MessageDigest/getInstance digest-algo)]
-      (TMessageDigest. 
-        digest 
-        (charset-name (name *default-charset*)))))
-  ([digest-algo charset] 
-    (let [digest-algo (clojure.string/upper-case (name digest-algo))
-          digest (java.security.MessageDigest/getInstance digest-algo)
-          charset (charset-name (name charset))]
-      (TMessageDigest. digest charset)))
-  ([digest digest-algo charset] 
-    (let [digest-algo (.getAlgorithm digest)
-          charset (charset-name (name charset))]
-      (TMessageDigest. digest charset))))
+      (java.security.MessageDigest/getInstance (name *default-digest-algorithm*))
+      (charset-name *default-charset*)))
+  ([digest-or-algo] 
+    (if (= (type digest-or-algo) clj.security.message_digest.TMessageDigest)
+      digest-or-algo
+      (let [digest-algo (clojure.string/upper-case (name digest-or-algo))
+            digest (java.security.MessageDigest/getInstance digest-algo)]
+        (TMessageDigest. digest (charset-name *default-charset*)))))
+  ([digest-or-algo & bytes-or-str]
+    (if (= (type digest-or-algo) clj.security.message_digest.TMessageDigest)
+      (-update digest-or-algo bytes-or-str)
+      (apply make-message-digest (make-message-digest digest-or-algo) bytes-or-str))))
+
+
+(defn update 
+  "Updates the message digest accumulator by digesting/secure-hashing the passed arguments.
+  this - a TMessageDigest object, created with factory-fn \"make-message-digest\"
+  bytes-or-str - 0, 1 or more arguments to digest of type string, char or byte-array.
+  Digest algorithm and charset are configured in TMessageDigest object.
+  Returns a new updated TMessageDigest object."
+  ;; helper fn to cater for the lack of varargs support in protocols
+  ([] (make-message-digest))
+  ([this & bytes-or-str] (apply make-message-digest this bytes-or-str)))
+
+;;     (cond
+;;       (= (type this) clj.security.message_digest.TMessageDigest)
+;;         (-update this bytes-or-str)
+;;       (keyword? this)
+;;         (apply update (make-message-digest this) bytes-or-str)
+;;       :else
+;;         (apply update (make-message-digest) this bytes-or-str))))
+
+
+(defn digest 
+  "Returns a byte-array of the value for the accumulated message digest.
+  this - a TMessageDigest object or the first argument to digest
+  bytes-or-str - 0, 1 or more arguments to digest of type string, char or byte-array.
+  If first argument is not a TMessageDigest object, then a new one will be dynamically 
+  created and that first argument is seen as the first value to digest.
+  The digest algorithm and charset are either pre-configured in the passed 
+  TMessageDigest object, or taken from the *default-digest-algorithm* and 
+  *default-charset* vars if the TMessageDigest object is created dynamically.
+  Note that any passed TMessageDigest object is not changed."
+  ;; helper fn to cater for the lack of varargs support in protocols
+  ([] (-digest (make-message-digest)))
+  ([this & bytes-or-str] 
+    (cond
+      (= (type this) clj.security.message_digest.TMessageDigest)
+        (-digest this bytes-or-str)
+      (keyword? this)
+        (apply digest (make-message-digest this) bytes-or-str)
+      :else
+        (apply digest (make-message-digest) this bytes-or-str))))
 
 
 (defn digests-equal?
@@ -195,46 +235,6 @@
                              (-digest d))
                         d)))
             digests)))
-
-
-(defn update 
-  "Updates the message digest accumulator by digesting/secure-hashing the passed arguments.
-  this - a TMessageDigest object, created with factory-fn \"message-digest\"
-  bytes-or-str - 0, 1 or more arguments to digest of type string, char or byte-array.
-  Digest algorithm and charset are configured in TMessageDigest object.
-  Returns a new updated TMessageDigest object."
-  ;; helper fn to cater for the lack of varargs support in protocols
-  ([] (update (message-digest)))
-  ([this & bytes-or-str] 
-    (cond
-      (= (type this) clj.security.message_digest.TMessageDigest)
-        (-update this bytes-or-str)
-      (keyword? this)
-        (apply update (message-digest this) bytes-or-str)
-      :else
-        (apply update (message-digest) this bytes-or-str))))
-
-
-(defn digest 
-  "Returns a byte-array of the value for the accumulated message digest.
-  this - a TMessageDigest object or the first argument to digest
-  bytes-or-str - 0, 1 or more arguments to digest of type string, char or byte-array.
-  If first argument is not a TMessageDigest object, then a new one will be dynamically 
-  created and that first argument is seen as the first value to digest.
-  The digest algorithm and charset are either pre-configured in the passed 
-  TMessageDigest object, or taken from the *default-message-digest* and 
-  *default-charset* vars if the TMessageDigest object is created dynamically.
-  Note that any passed TMessageDigest object is not changed."
-  ;; helper fn to cater for the lack of varargs support in protocols
-  ([] (-digest (message-digest)))
-  ([this & bytes-or-str] 
-    (cond
-      (= (type this) clj.security.message_digest.TMessageDigest)
-        (-digest this bytes-or-str)
-      (keyword? this)
-        (apply digest (message-digest this) bytes-or-str)
-      :else
-        (apply digest (message-digest) this bytes-or-str))))
 
 
 (defn bytes2hex 
