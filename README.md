@@ -9,22 +9,15 @@ thru one-way functions like MD5, SHA-1, SHA-256, SHA-512, etc.
 
 Under the covers, this library uses the "java.security.MessageDigest" library. However, instead of using the Java methods directly, a more clojuresque and functional abstraction is layered on top of the native mutable objects and state-changing methods. 
  
-The "clj.security.message-digest" library works with immutable "message-digest" objects with pure functional "update" and "digest" functions.
+The "clj.security.message-digest" library works with immutable "message-digest" objects and with pure functional "update" and "digest" functions.
 
-As the message-digest object, which holds the accumulated
-digest state, is immutable. The "message-digest" factory function creates a new 
-message-digest object, and is passed the digest-algorithm to use for the hashing as well 
-as the charset/utf-encoding to use for strings. The "update" function returns a new updated 
-message-digest object, while the "digest" function generates the accumulated digest 
-without changing the passed message-digest object. 
-The functional interfaces allow for a more clojuresque and worry-free coding experience.
-Furthermore, as the update function returns a new immutable, updated message-digest object,
-it can safely be used in higher-order reduce-like functions.
-Lastly, both update and digest can be passed a variable number of arguments, 
-which will be digested lazely to accommodate a virtual infinite number of args. Also,
-the arguments can be a mix of strings, characters, bytes or byte-arrays that will be 
-transparently charset/utf-encoded if needed, and nils are ignored.
+The "Usage" section is divided in three sections: the first section shows a functional interface usage that tries to mimic the equivalent non-functional java one. The second section shows some additional features that make the digesting operations easier on data structures. Lastly, by using message-digest objects as digester functions themselves, it brings the interfaces on yet another level of abstraction.
 
+The "What's wrong with the Java interface?" at the end gives example of the java interface usage, and shows how the mutable objects and state-changing methods interact.
+
+## Installation
+
+Something about versions, leiningen, clojars, and how to start a repl...
 
 ## Usage
 
@@ -94,9 +87,9 @@ Implicitly create a "message-digest" object inside of "update" and "digest" if n
 	"900150983CD24FB0D6963F7D28E17F72"
 
 
-### A much more Clojuresque Message Digest Interface
+### An even more Clojuresque Message Digest Interface
 
-Conceptually and also implementation-wise, the "make-message-digest" and "update" functions are truly equivalent and the same in functionality: they both return a new "message-digest" instance from either an existing "message-digest" or by creating a new one if needed. If a new "message-digest" is needed, then the first parameter MUST indicate the digest-algorithm. Any subsequent parameters are either those entities that have to be digested or a keyword-indicator for the charset of the subsequent string or chars to digest. The charset MUST be indicated with a keyword to distinguish it from the strings that are to be digested.
+Conceptually and also implementation-wise, the "make-message-digest" and "update" functions are truly equivalent and the same in functionality: they both return a new "message-digest" instance from either an existing "message-digest" or by creating a new one if needed. If a new "message-digest" is needed, then the first parameter MUST indicate the digest-algorithm either thru a string or keyword. Any subsequent parameters are either those entities that have to be digested or a keyword-indicator for the charset of the subsequent string or chars to digest. The charset MUST be indicated with a keyword to distinguish it from the strings that are to be digested.
 
 	user=> (md/bytes2hex (md/digest (md/update (md/update (md/update :sha-1 :utf-8 "a") \b) (byte 99))))
 	"A9993E364706816ABA3E25717850C26C9CD0D89D"
@@ -112,7 +105,7 @@ Furthermore, the "message-digest" instances themselves can also be used as funct
 	user=> (md/bytes2hex (md/digest (my-initial-digester "abc")))
 	"A9993E364706816ABA3E25717850C26C9CD0D89D"
 
-So a "message-digest" object can be seen as a digester function that has the accumulated digest baked in, and it will return a new "message-digest" object/digester which has the digests of the additional arguments added to the accumulator: it has the equivalent functionality of the "update" function.
+So a "message-digest" object can be seen as a "digester" function that has the accumulated digest baked in, and it will return a new "message-digest" object/digester which has the digests of the additional arguments added to the accumulator: it has the equivalent functionality of the "update" function.
 
 Finally, if the "message-digest" object as a function is called without any arguments, it will return the final digest value of the accumulated digests itself:
 
