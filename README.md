@@ -207,6 +207,10 @@ What this example session shows is that:
 Note that the clone method does make a clean copy of the MessageDigest accumulator instance, and that functionality is used under the covers in this clojure library to provide the required immutability. 
 
 
+## Continuous Integration
+
+[![Build Status](https://travis-ci.org/franks42/clj.security.message-digest.png?branch=master](http://franks42/clj.security.message-digest)
+
 ## License
 
 Copyright © 2013 Frank Siebenlist
