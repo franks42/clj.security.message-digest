@@ -156,11 +156,11 @@
 
 (defn make-message-digest
   "Factory function to create TMessageDigest objects for use with \"update\" and \"digest\".
-  digest-algo - string indicating the digest algorithm to use, like \"SHA-256\"
-  charset - string indicating the text encoding to use, like \"UTF-8\"
+  digest-or-algo - message-digest instance or keyword indicating the digest algorithm to use, 
+    like :md5, :sha-1, or :SHA-256
   When no arguments are passed, the values of the dynamic vars 
   *default-digest-algorithm* and *default-charset* will be used.
-  Returns a new TMessageDigest object."
+  Returns a new message-digest (TMessageDigest) object."
   ([] 
     (TMessageDigest. 
       (java.security.MessageDigest/getInstance (name *default-digest-algorithm*))
@@ -180,20 +180,12 @@
 (defn update 
   "Updates the message digest accumulator by digesting/secure-hashing the passed arguments.
   this - a TMessageDigest object, created with factory-fn \"make-message-digest\"
-  bytes-or-str - 0, 1 or more arguments to digest of type string, char or byte-array.
+  bytes-or-str - 0, 1 or more arguments to digest of type string, char, byte or byte-array.
   Digest algorithm and charset are configured in TMessageDigest object.
   Returns a new updated TMessageDigest object."
   ;; helper fn to cater for the lack of varargs support in protocols
   ([] (make-message-digest))
   ([this & bytes-or-str] (apply make-message-digest this bytes-or-str)))
-
-;;     (cond
-;;       (= (type this) clj.security.message_digest.TMessageDigest)
-;;         (-update this bytes-or-str)
-;;       (keyword? this)
-;;         (apply update (make-message-digest this) bytes-or-str)
-;;       :else
-;;         (apply update (make-message-digest) this bytes-or-str))))
 
 
 (defn digest 
@@ -244,6 +236,7 @@
   (clojure.string/upper-case 
     (apply str (map (partial format "%02x") (any2bytes some-bytes)))))
 
+
 (defn hex2bytes 
   "Returns a byte array for a string of hexadecimals."
   [hex-str]
@@ -252,10 +245,14 @@
                 (unchecked-byte (Integer/parseInt (str x y) 16)))
                 (partition 2 hex-str))))
 
+
 (defn bytes2base64 
+  ""
   [some-bytes]
   (org.apache.commons.codec.binary.Base64/encodeBase64String some-bytes))
 
+
 (defn bytes2base32 
+  ""
   [some-bytes]
   (.encodeToString (org.apache.commons.codec.binary.Base32.) some-bytes))
