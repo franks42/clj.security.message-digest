@@ -3,7 +3,7 @@
 A functional clojure library for the creation of secure hashes, i.e. message digests, 
 thru one-way functions like MD5, SHA-1, SHA-256, SHA-512, etc. 
 
-(not sure about the practicality  - more an exercise in interface design...)
+(not sure about the practicality  - more an educational exercise in interface design...)
 
 ## Introduction
 
@@ -14,6 +14,11 @@ The "clj.security.message-digest" library works with immutable "message-digest" 
 The "Usage" section is divided in three sections: the first section shows a functional interface usage that tries to mimic the equivalent non-functional java one. The second section shows some additional features that make the digesting operations easier on data structures. Lastly, by using message-digest objects as digester functions themselves, it brings the interfaces on yet another level of abstraction.
 
 The "What's wrong with the Java interface?" at the end gives example of the java interface usage, and shows how the mutable objects and state-changing methods interact.
+
+The end result is a clojure abstraction for secure hashing that improves on the java interface by providing an immutable digest-message object, where the update function returns a new updated digest-message object, while the digest function returns the secure hash value without changing the digest-message object: it gives you a pure functional interface for message digesting or secure hashing.
+
+As icing on the cake, it also tries to deal with (unicode-)strings in a more friendly way, allows for an infinite number of arguments to update&digest, makes the message-digest usable as a function, and all can be used in higher-order functions.
+
 
 ## Installation
 
@@ -201,9 +206,6 @@ What this example session shows is that:
 
 Note that the clone method does make a clean copy of the MessageDigest accumulator instance, and that functionality is used under the covers in this clojure library to provide the required immutability. 
 
-As a result, this clojure abstraction improves on the java interface by providing an immutable digest-message object, where the update function returns a new updated digest-message object, while the digest function returns the secure hash value without changing the digest-message object: it gives you a pure functional interface for message digesting or secure hashing.
-
-As icing on the cake, it also tries to deal with (unicode-)strings in a more friendly way, allows for an infinite number of arguments to update&digest, makes the message-digest usable as a function, and all can be used in higher-order functions.
 
 ## License
 
