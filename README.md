@@ -209,7 +209,7 @@ Note that the clone method does make a clean copy of the MessageDigest accumulat
 
 ## Continuous Integration
 
-[![Build Status](https://travis-ci.org/franks42/clj.security.message-digest.png?branch=master)](http://franks42/clj.security.message-digest)
+[![Build Status](https://travis-ci.org/franks42/clj.security.message-digest.png?branch=master)](http://travis-ci.org/franks42/clj.security.message-digest)
 
 ## License
 
