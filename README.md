@@ -23,7 +23,7 @@ The "What's wrong with the Java interface?" section at the end gives a motivatio
 
 ## Installation
 
-The "clj.security.message-digest" module is distributed thru clojars.org, and the following snippets show how the dependencies are added to your project.clj:
+The "clj.security.message-digest" module is distributed thru [Clojars](https://clojars.org/org.clojars.franks42/clj.security.message-digest "Clojars"), and the following snippets show how the dependencies are added to your project.clj:
 
 ```
     ;; Leiningen version 1
