@@ -1,34 +1,68 @@
-# clj.security.message-digest
+# clj.security.message-digest [![Build Status](https://travis-ci.org/franks42/clj.security.message-digest.png?branch=master)](http://travis-ci.org/franks42/clj.security.message-digest)
 
-A functional clojure library for the creation of secure hashes, i.e. message digests, 
-thru one-way functions like MD5, SHA-1, SHA-256, SHA-512, etc. 
+A functional clojure library for the creation of secure hashes, i.e. message digests, thru one-way functions like MD5, SHA-1, SHA-256, SHA-512, etc. 
 
-(not sure about the practicality  - more an educational exercise in interface design...)
+clj.security.message-digest ["0.1.0-SNAPSHOT"]
+
+(not sure about the practicality  - more an educational exercise in interface design at this point...)
 
 ## Introduction
 
-Under the covers, this library uses the "java.security.MessageDigest" library. However, instead of using the Java methods directly, a more clojuresque and functional abstraction is layered on top of the native mutable objects and state-changing methods. 
+The "clj.security.message-digest" module wraps the "java.security.MessageDigest" library. However, instead of using the Java methods directly, a more clojuresque and functional abstraction is layered on top of the native mutable objects and state-changing methods. 
  
-The "clj.security.message-digest" library works with immutable "message-digest" objects and with pure functional "update" and "digest" functions.
-
-The "Usage" section is divided in three sections: the first section shows a functional interface usage that tries to mimic the equivalent non-functional java one. The second section shows some additional features that make the digesting operations easier on data structures. Lastly, by using message-digest objects as digester functions themselves, it brings the interfaces on yet another level of abstraction.
-
-The "What's wrong with the Java interface?" at the end gives example of the java interface usage, and shows how the mutable objects and state-changing methods interact.
-
-The end result is a clojure abstraction for secure hashing that improves on the java interface by providing an immutable digest-message object, where the update function returns a new updated digest-message object, while the digest function returns the secure hash value without changing the digest-message object: it gives you a pure functional interface for message digesting or secure hashing.
+The result is a clojure abstraction for secure hashing that improves on the java interface by providing an immutable "digest-message" object, where the "update" function returns a new updated "digest-message" object, while the "digest" function returns the secure hash value without changing the "digest-message" instance itself: it gives you a pure functional interface for message digesting.
 
 As icing on the cake, it also tries to deal with (unicode-)strings in a more friendly way, allows for an infinite number of arguments to update&digest, makes the message-digest usable as a function, and all can be used in higher-order functions.
+
+The "Installation" section explains what to add to your project.clj file and what namespace to require, to make the library available to your clojure code
+
+The "Usage" section is divided in three sections: the first section shows the use of a functional interface that mimics the equivalent non-functional java one. The second section shows some additional features that make the digesting operations easier on data structures. Lastly, by using message-digest objects as digester functions themselves, it brings the interfaces on yet another level of abstraction.
+
+The "What's wrong with the Java interface?" section at the end gives a motivation for this work by providing examples of the java interface usage, and and by showing how the mutable objects and state-changing methods interact.
 
 
 ## Installation
 
-Something about versions, leiningen, clojars, and how to start a repl...
+The "clj.security.message-digest" module is distributed thru clojars.org, and the following snippets show how the dependencies are added to your project.clj:
+
+```
+    ;; Leiningen version 1
+    :dev-dependencies [org.clojars.franks42/clj.security.message-digest "0.1.0-SNAPSHOT"]
+
+    ;; Leiningen version 2
+    :profiles {:dev {:dependencies [org.clojars.franks42/clj.security.message-digest "0.1.0-SNAPSHOT"]}}
+```
+
+or thru maven:
+
+		<dependency>
+			<groupId>org.clojars.franks42</groupId>
+			<artifactId>clj.security.message-digest</artifactId>
+			<version>0.1.0-SNAPSHOT</version>
+		</dependency>
+
+To make use of the library, the recommended way of requiring the namespace is:
+
+    (use your-ns
+    	(:require [clj.security.message-digest :as md]))
+
+The three main functions are then available within "your-ns" as: "md/make-message-digest", "md/update" and "md/digest".
+
+## Documentation
+
+The library's API documentation is generated with codex, and is available here: [clj.security.message-digest codox-doc](http://htmlpreview.github.com/?https://raw.github.com/franks42/clj.security.message-digest/master/doc/index.html "clj.security.message-digest codox-doc").
+
+The following "Usage" section shows in detail how the library functions are used. 
 
 ## Usage
 
 ### A functional java.security.MessageDigest-like approach
 
-When you're familiar with the "java.security.MessageDigest" interfaces, then it will be easy to use the equivalent, more functional interface. Instead of "java.security.MessageDigest/getInstance" we have the "make-message-digest" factory function, which returns a "message-digest" instance. There are also the "update" and "digest" functions that do almost the same thing as the Java methods with the same name. The differences are that neither "update" nor "digest" changes the "message-digest" instance that it works on: the "message-digest" object is immutable. Therefor, the "update" function returns a new "message-digest" instance that incorporates the updated digest-accumulator, and the "digest" function does not reset the message-digest's accumulator but leaves it as is.
+If you're unfamiliar with the workings of the native "java.security.MessageDigest" library, then you may want to take a look at section "What's wrong with the Java interface?" first.
+
+When you are familiar with the "java.security.MessageDigest" interfaces, then it will be easy to use the equivalent, more functional interface. Instead of "java.security.MessageDigest/getInstance" we have the "make-message-digest" factory function, which returns a "message-digest" instance. (Technically, the "make-message-digest" function returns an object of the type "TDigestMessage", but we will refer to that as a "message-digest" instance throughout the documentation.)
+
+We also have the "update" and "digest" functions that do almost the same thing as the Java methods with the same name. The differences are that neither "update" nor "digest" changes the "message-digest" instance that it works on: the "message-digest" object is immutable. Therefor, the "update" function returns a new "message-digest" instance that incorporates the updated digest-accumulator, and the "digest" function does not reset the message-digest's accumulator but leaves it as is.
 
 The following repl-examples should make the differences clear:
 
@@ -58,14 +92,15 @@ Note that the initial and updated digest objects are not changed:
 	user=> (md/bytes2hex (md/digest (md/update my-initial-digest  (.getBytes "ab" "UTF-8")) (byte 99)))
 	"A9993E364706816ABA3E25717850C26C9CD0D89D"
 
-So... clj.security.message-digest provides an equivalent functional interface for java.security.MessageDigest - we could stop here..., but that would be a shame ;-)
+In summary, the "clj.security.message-digest" module provides an equivalent alternative, pure functional interface for the java.security.MessageDigest library.
 
-### A more Clojuresque Message Digest Interface
+### A More Clojuresque Message Digest Interface
 
-There are few more features that make it easier to digest the strings and bytes of data structures like lists and trees. 
-* First of all, both the "update" and "digest" functions support a variable number of arguments to digest. 
-* Second, the byte encoding of strings and chars is done implicitly by specifying a charset as an argument. 
-* Third, the "message-digest" instance is implicitly created inside of the "update" and "digest" function if one does not pass a "digest-message" object as the first argument. The digest-algorithm for this newly created digest-message instance can either be specified by a first keyword argument, or by using the "\*default-digest-algorithm\*" and "\*default-charset\*" dynamic variables.
+There are few more features that make it easier to digest the strings and bytes of data structures like lists and trees.
+
+* Both the "update" and "digest" functions support a variable number of arguments to digest. 
+* The byte encoding of strings and chars is done implicitly by specifying a charset as an argument. 
+* The "message-digest" instance is implicitly created inside of the "update" and "digest" function if one does not pass a "digest-message" object as the first argument. The digest-algorithm for this newly created digest-message instance can either be specified by a first keyword argument, or by using the "\*default-digest-algorithm\*" and "\*default-charset\*" dynamic variables.
 
 Specify both digest-algorithm and charset as keyword values in the factory function, and show variable number of arguments of different types:
 
@@ -92,7 +127,7 @@ Implicitly create a "message-digest" object inside of "update" and "digest" if n
 	"900150983CD24FB0D6963F7D28E17F72"
 
 
-### An even more Clojuresque Message Digest Interface
+### An Even More Clojuresque Message Digest Interface
 
 Conceptually and also implementation-wise, the "make-message-digest" and "update" functions are truly equivalent and the same in functionality: they both return a new "message-digest" instance from either an existing "message-digest" or by creating a new one if needed. If a new "message-digest" is needed, then the first parameter MUST indicate the digest-algorithm either thru a string or keyword. Any subsequent parameters are either those entities that have to be digested or a keyword-indicator for the charset of the subsequent string or chars to digest. The charset MUST be indicated with a keyword to distinguish it from the strings that are to be digested.
 
@@ -199,15 +234,16 @@ If you need for example the digest value for both "a" and "abc", then in order t
 What this example session shows is that:
 
 *	a DigestMessage instance is not immutable as it's changed in-place by the update and digest methods
-	
 *	the update method doesn't return anything, which makes chaining of calls impossible
-	
 *	the digest method automatically resets the DigestMessage accumulator
+* only a single item to digest can be passed to the update and digest methods as an argument
+* strings have to be byte-encoded explicitly before they can be passed to the update & digest methods
 
 Note that the clone method does make a clean copy of the MessageDigest accumulator instance, and that functionality is used under the covers in this clojure library to provide the required immutability. 
 
-
 ## Continuous Integration
+
+The testing of the "clj.security.message-digest" project itself is integrated with Travis CI, and the test scripts are run on clojure versions 1.4 and 1.5, and on jdk 6 and 7.
 
 [![Build Status](https://travis-ci.org/franks42/clj.security.message-digest.png?branch=master)](http://travis-ci.org/franks42/clj.security.message-digest)
 

@@ -1,7 +1,7 @@
 (ns clj.security.message-digest
   "A functional clojure library for the creation of secure hashes, i.e. message digests, 
   thru the one-way functions known by the names of MD5, SHA-1, SHA-256, SHA-512, etc. 
-  Under the covers, the java.security.MessageDigest library is used.
+  This module wraps the java.security.MessageDigest library in a pure functional abstraction layer.
   The interfaces are functional as the message-digest object, which holds the accumulated
   digest state, is immutable. The \"make-message-digest\" factory function creates a new 
   message-digest object, and is passed the digest-algorithm to use for the hashing as well 
@@ -12,11 +12,12 @@
   Furthermore, as the update function returns a new immutable, updated message-digest object,
   it can safely be used in higher-order reduce-like functions.
   Lastly, both update and digest can be passed a variable number of arguments, 
-  which will be digested lazely to accommodate a virtual infinite number of args. Also,
+  which will be digested lazely to accommodate a virtually infinite number of args. Also,
   the arguments can be a mix of strings, characters, bytes or byte-arrays that will be 
-  transparently utf-encoded if needed, and nils are ignored.
+  transparently byte-encoded based on the specified charset. 
+  Note that nils are ignored as arguments.
   Example:
-  user=> (def d0 (make-message-digest \"SHA-1\" \"UTF-8\"))
+  user=> (def d0 (make-message-digest :SHA-1 :UTF-8))
   #'user/d0
   user=> (->hex (digest d0 \"abc\"))
   \"A9993E364706816ABA3E25717850C26C9CD0D89D\"
