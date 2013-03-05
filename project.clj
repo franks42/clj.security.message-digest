@@ -10,8 +10,7 @@
                      ]
   :plugins [[codox "0.6.4"]
             ]
-  :profiles {:1.3 {:dependencies [[org.clojure/clojure "1.3.0"]]}
-             :1.4 {:dependencies [[org.clojure/clojure "1.4.0"]]}
+  :profiles {:1.4 {:dependencies [[org.clojure/clojure "1.4.0"]]}
              :master {:dependencies [[org.clojure/clojure "1.5.0"]]}
              :dev {:dependencies [[clj-ns-browser "1.3.1"]]}}
   :aliases  {"all" ["with-profile" "dev:dev,1.3:dev,1.4:dev,1.4:dev,master"]}
