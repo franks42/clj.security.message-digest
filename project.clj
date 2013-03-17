@@ -3,7 +3,7 @@
   :url "https://github.com/franks42/clj.security.message-digest"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.5.0"]
+  :dependencies [[org.clojure/clojure "1.5.1"]
                  [commons-codec "1.5"]]
   :dev-dependencies [[clj-ns-browser "1.3.1"]
                      [codox "0.6.4"]
@@ -13,7 +13,7 @@
   :plugins [[codox "0.6.4"]
             ]
   :profiles {:1.4 {:dependencies [[org.clojure/clojure "1.4.0"]]}
-             :master {:dependencies [[org.clojure/clojure "1.5.0"]]}
+             :master {:dependencies [[org.clojure/clojure "1.5.1"]]}
              :dev {:dependencies [[clj-ns-browser "1.3.1"]]}}
   :aliases  {"all" ["with-profile" "dev:dev,1.4:dev,1.4:dev,master"]}
   )

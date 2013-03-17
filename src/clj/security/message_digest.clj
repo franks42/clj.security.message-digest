@@ -100,6 +100,15 @@
   )
 
 
+(defprotocol ITransient*
+  ""
+  (transient* [this]
+    "Returns a transient, mutable version of this.
+    Note that this itself is not affected.
+    Call persistent*! after mutating operations are finished to obtain an immutable instance.")
+  )
+
+
 (deftype TMessageDigest [msg-digest charset]
   IFn
     (invoke [this]
@@ -119,28 +128,87 @@
   )
 
 
+(defprotocol ITransientMessageDigest
+  ""
+  (-update! [this bytes-or-str]
+    "See \"update!\" function")
+  (persistent*! [this]
+    "Returns an immutable instance and will disallow any further mutating operations on this instance.")
+  )
+
+
+(deftype TTransientMessageDigest [editable? msg-digest charset]
+  ITransientMessageDigest
+  (-update! [this bytes-or-str]
+    (loop [charset1 charset
+           bytes-or-str bytes-or-str]
+      (if-let [bytes-or-str (seq bytes-or-str)]
+        (let [s (first bytes-or-str)]
+          (if (keyword? s)
+            (recur (charset-name s) (rest bytes-or-str))
+            (do
+              (when-not (nil? s)
+                (.update msg-digest 
+                         (cond
+                          (char? s) (.getBytes (str s) charset1)
+                          (string? s) (.getBytes s charset1)
+                          (= (type s) clojure.core.Vec) (byte-array s)
+                          :else s)))
+                (recur charset1 (rest bytes-or-str)))))
+        (if (= charset1 charset) 
+          this 
+          (TTransientMessageDigest. editable? msg-digest charset1)))))
+
+  (persistent*! [this]
+    (if @editable?
+      (do (reset! editable? false)
+          (TMessageDigest. msg-digest charset))
+      (throw (Exception. "persistent! called twice"))))
+  )
+
+
+(defn update! 
+  "Updates this TTransientMessageDigest mutable instance in-place.
+  Returns the changed instance.
+  Note that \"update!\" should only be used as an optimization when the 
+  immutable version \"update\" has proven to be too slow. 
+  (every \"update\" call incurs a cloning of the MessageDigest object,
+  which may affect performance if \"update\" is called many times for single bytes)  
+  Usage pattern:
+  (persistent*! (do-many-times update! (transient* a-msg-digest) single-byte))
+  equivalent to and (sometimes/maybe) faster than:
+  (do-many-times update a-msg-digest single-byte)"
+  [this & bytes-or-str] (-update! this bytes-or-str))
+
+
 (extend-type TMessageDigest
+  ITransient*
+    (transient* [this]
+      (TTransientMessageDigest. (atom true) (.clone (.-msg-digest this)) (.-charset this)))
   IMessageDigest
     (-update
-      ([this bytes-or-str]
-        (let [digest (.clone (.-msg-digest this))
-              charset (.-charset this)]
-          (loop [charset charset
-                 bytes-or-str bytes-or-str]
-            (if-let [bytes-or-str (seq bytes-or-str)]
-              (let [s (first bytes-or-str)]
-                (if (keyword? s)
-                  (recur (charset-name s) (rest bytes-or-str))
-                  (do
-                    (when-not (nil? s)
-                      (.update digest 
-                               (cond
-                                (char? s) (.getBytes (str s) charset)
-                                (string? s) (.getBytes s charset)
-                                (= (type s) clojure.core.Vec) (byte-array s)
-                                :else s)))
-                      (recur charset (rest bytes-or-str)))))
-              (TMessageDigest. digest charset))))))
+      [this bytes-or-str]
+      (persistent*! (-update! (transient* this) bytes-or-str)))
+;;     (-update
+;;       ([this bytes-or-str]
+;;         (let [digest (.clone (.-msg-digest this))
+;;               charset (.-charset this)]
+;;           (loop [charset charset
+;;                  bytes-or-str bytes-or-str]
+;;             (if-let [bytes-or-str (seq bytes-or-str)]
+;;               (let [s (first bytes-or-str)]
+;;                 (if (keyword? s)
+;;                   (recur (charset-name s) (rest bytes-or-str))
+;;                   (do
+;;                     (when-not (nil? s)
+;;                       (.update digest 
+;;                                (cond
+;;                                 (char? s) (.getBytes (str s) charset)
+;;                                 (string? s) (.getBytes s charset)
+;;                                 (= (type s) clojure.core.Vec) (byte-array s)
+;;                                 :else s)))
+;;                       (recur charset (rest bytes-or-str)))))
+;;               (TMessageDigest. digest charset))))))
     (-digest
       ([this] 
         (.digest (.clone (.-msg-digest this))))

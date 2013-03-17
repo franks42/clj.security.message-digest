@@ -8,3 +8,5 @@ pom.xml
 .lein-repl-history
 .lein_repls
 .lein-plugins/checksum
+target/*
+target/stale/extract-native.dependencies
